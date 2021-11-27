@@ -2,7 +2,7 @@ from flask import Flask, render_template
 from flask_pymongo import PyMongo
 import json
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='build')
 
 # Connecting to MongoDB
 # ---------------------------------------------------------------- #
@@ -14,7 +14,7 @@ mongo = PyMongo(app)
 # Home Page Route "localhost/"
 @app.route("/")
 def homepage():
-    return "<p> Hello, World! </p>"
+    return render_template('index.html')
 
 # Starting the Web Server
 # ---------------------------------------------------------------- #
