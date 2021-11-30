@@ -1,11 +1,14 @@
-from flask import Flask, render_template, Response, Request
-from flask.wrappers import Response
-from flask_pymongo import PyMongo
+from flask import Flask, render_template, request, url_for, redirect, session
+from flask.globals import session
+from flask.helpers import url_for
+#from flask.wrappers import Response
+#from flask_pymongo import PyMongo
 import pymongo
-import json
+import bcrypt
 from bson.objectid import ObjectId
 
 app = Flask(__name__)
+app.secret_key = 'testing'
 
 # Connecting to MongoDB
 # ---------------------------------------------------------------- #
@@ -15,24 +18,105 @@ try:
         port = 27017,
         serverSelectionTimeoutMS = 1000
     )
-    db = mongo.nosql-final-project
+    db = mongo.nosql_movie_db
     mongo.server_info()
+    print(' * Success - Database Running on localhost, port 27017')
 except:
     print('ERROR - Could Not Connect to the DB.')
 
-'''
-app.config["MONGO_URI"] = "mongodb://localhost:27017/nosql-finalproject"
-mongo = PyMongo(app)
-'''
 
 # Constructing the Routes
 # ---------------------------------------------------------------- #
 # Home Page Route "localhost/"
+'''
 @app.route("/")
 def homepage():
+    return render_template('login.html')
+'''
+
+# CRUD Routes
+# ---------------------------------------------------------------- #
+
+@app.route("/", methods=['POST', 'GET'])
+def index():
+    message = ''
+    if "email" in session:
+        return redirect(url_for("logged_in"))
+    if request.method == "POST":
+        user = request.form.get("fullname")
+        email = request.form.get("email")
+        
+        password1 = request.form.get("password1")
+        password2 = request.form.get("password2")
+        
+        user_found = db.users.find_one({"name": user})
+        email_found = db.users.find_one({"email": email})
+        if user_found:
+            message = 'There already is a user by that name'
+            return render_template('index.html', message=message)
+        if email_found:
+            message = 'This email already exists in database'
+            return render_template('index.html', message=message)
+        if password1 != password2:
+            message = 'Passwords should match!'
+            return render_template('index.html', message=message)
+        else:
+            hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
+            user_input = {'name': user, 'email': email, 'password': hashed}
+            db.users.insert_one(user_input)
+            
+            user_data = db.users.find_one({"email": email})
+            new_email = user_data['email']
+   
+            return render_template('logged_in.html', email=new_email)
     return render_template('index.html')
 
-# CRUD Operation Routes
+
+@app.route("/login", methods=["POST", "GET"])
+def login():
+    message = 'Please login to your account'
+    if "email" in session:
+        return redirect(url_for("logged_in"))
+
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        email_found = db.users.find_one({"email": email})
+        if email_found:
+            email_val = email_found['email']
+            passwordcheck = email_found['password']
+            
+            if bcrypt.checkpw(password.encode('utf-8'), passwordcheck):
+                session["email"] = email_val
+                return redirect(url_for('logged_in'))
+            else:
+                if "email" in session:
+                    return redirect(url_for("logged_in"))
+                message = 'Wrong password'
+                return render_template('login.html', message=message)
+        else:
+            message = 'Email not found'
+            return render_template('login.html', message=message)
+    return render_template('login.html', message=message)
+
+@app.route('/logged_in')
+def logged_in():
+    if "email" in session:
+        email = session["email"]
+        return render_template('logged_in.html', email=email)
+    else:
+        return redirect(url_for("login"))
+
+@app.route("/logout", methods=["POST", "GET"])
+def logout():
+    if "email" in session:
+        session.pop("email", None)
+        return render_template("signout.html")
+    else:
+        return render_template('index.html')
+
+# CRUD Operation Examples
 # ---------------------------------------------------------------- #
 
 # Create Document Routes
@@ -40,17 +124,12 @@ def homepage():
 def create_user():
     try:
         user = {
-            "email":Request.form["email"],
-            "name" :Request.form["name"],
-            "password":Request.form["password"]
+            "email":request.form["email"],
+            "name" :request.form["name"],
+            "password":request.form["password"]
         }
         dbResponse = db.users.insert_one(user)
         print(dbResponse.inserted_id)
-        return Response(
-            response = json.dumps({"Message": "User Create", "id": f"{dbResponse.inserted_id}"}),
-            status = 200,
-            mimetype = "Application/JSON"
-        )
     except Exception as ex:
         print(ex)
 
@@ -62,18 +141,8 @@ def get_some_user():
         print(data)
         for user in data:
             user["_id"] = str(user["_id"])
-        return Response(
-            response = json.dumps(data),
-            status = 200,
-            mimetype = "Application/JSON"
-        )
     except Exception as ex:
         print(ex)
-        return Response(
-            response = json.dumps({"Message": "Cannot Create User."}),
-            status = 500,
-            mimetype = "Application/JSON"
-        )
 
 # Update Document Routes
 @app.route("/users/<id>", methods=["PATCH"])
@@ -81,26 +150,15 @@ def update_user(id):
     try:
         dbResponse = db.users.update_one(
             {"_id": ObjectId(id)},
-            {"$set": {"name": Request.form["name"]}}
+            {"$set": {"name": request.form["name"]}}
         )
         if dbResponse.modified_count == 1:
-            return Response(
-                response = json.dumps({"Message": "User Updated"}),
-                status = 200,
-                mimetype = "Application/JSON"
-            )
+            print('Updated.')
         else:
-            return Response(
-                response = json.dumps({"Message": "Nothing to Update "}),
-                status = 200,
-                mimetype = "Application/JSON"
-            )
+            print('Nothing to Update')
     except Exception as ex:
-        response = json.dumps(
-            response = json.dumps({"message": "Sorry Cannot Update User."}),
-            status = 500,
-            mimetype = "Application/JSON"
-        )
+        print('Sorry Cannot Update')
+
 
 # Delete Document Routes
 @app.route("/users/<id>", methods=["DELETE"])
@@ -108,23 +166,11 @@ def delete_user(id):
     try:
         dbResponse = db.users.delete_one({"_id": ObjectId(id)})
         if dbResponse.deleted_count == 1:
-            response = json.dumps(
-                response = json.dumps({"message": "User Deleted", "id":f"{id}"}),
-                status = 200,
-                mimetype = "Application/JSON"
-            )
+            print('User Deleted')
         else: 
-            response = json.dumps(
-                response = json.dumps({"message": "User Not Found", "id":f"{id}"}),
-                status = 200,
-                mimetype = "Application/JSON"
-            )
+            print('User not Found')
     except Exception as ex:
-        response = json.dumps(
-            response = json.dumps({"message": "Sorry Cannot Delete User."}),
-            status = 500,
-            mimetype = "Application/JSON"
-        )
+        print('Cannot Delete User')
 
 
 # Starting the Web Server
