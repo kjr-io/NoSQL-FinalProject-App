@@ -37,6 +37,8 @@ def homepage():
 # CRUD Routes
 # ---------------------------------------------------------------- #
 
+# Create an Account
+'''
 @app.route("/", methods=['POST', 'GET'])
 def index():
     message = ''
@@ -52,13 +54,13 @@ def index():
         user_found = db.users.find_one({"name": user})
         email_found = db.users.find_one({"email": email})
         if user_found:
-            message = 'There already is a user by that name'
+            message = 'There Already is a User by that Name.'
             return render_template('index.html', message=message)
         if email_found:
-            message = 'This email already exists in database'
+            message = 'This Email Already Exists in Database.'
             return render_template('index.html', message=message)
         if password1 != password2:
-            message = 'Passwords should match!'
+            message = 'Passwords Should Match.'
             return render_template('index.html', message=message)
         else:
             hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
@@ -70,11 +72,12 @@ def index():
    
             return render_template('logged_in.html', email=new_email)
     return render_template('index.html')
+'''
 
-
-@app.route("/login", methods=["POST", "GET"])
+# Log in
+@app.route("/", methods=["POST", "GET"])
 def login():
-    message = 'Please login to your account'
+    message = 'Please Login to Your Account.'
     if "email" in session:
         return redirect(url_for("logged_in"))
 
@@ -87,34 +90,41 @@ def login():
             email_val = email_found['email']
             passwordcheck = email_found['password']
             
-            if bcrypt.checkpw(password.encode('utf-8'), passwordcheck):
+            #if bcrypt.checkpw(password.encode('utf-8'), passwordcheck):
+            if password == passwordcheck:
                 session["email"] = email_val
                 return redirect(url_for('logged_in'))
             else:
                 if "email" in session:
                     return redirect(url_for("logged_in"))
-                message = 'Wrong password'
+                message = 'Wrong Password.'
                 return render_template('login.html', message=message)
         else:
-            message = 'Email not found'
+            message = 'Email Not Found.'
             return render_template('login.html', message=message)
     return render_template('login.html', message=message)
 
+# Logged In
 @app.route('/logged_in')
 def logged_in():
     if "email" in session:
+        print(session)
         email = session["email"]
         return render_template('logged_in.html', email=email)
     else:
         return redirect(url_for("login"))
 
+# Log Out
 @app.route("/logout", methods=["POST", "GET"])
 def logout():
     if "email" in session:
         session.pop("email", None)
         return render_template("signout.html")
     else:
-        return render_template('index.html')
+        return render_template('login.html')
+
+
+
 
 # CRUD Operation Examples
 # ---------------------------------------------------------------- #
