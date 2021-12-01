@@ -1,3 +1,4 @@
+import datetime
 from flask import Flask, render_template, request, url_for, redirect, session
 from flask.globals import session
 from flask.helpers import url_for
@@ -10,11 +11,13 @@ app.secret_key = 'testing'
 # Connecting to MongoDB
 # ---------------------------------------------------------------- #
 try:
+    # Establishing Connection to localhost and Port the DB is Running On
     mongo = pymongo.MongoClient(
         host = 'localhost',
         port = 27017,
         serverSelectionTimeoutMS = 1000
     )
+    # Selecting Our DB
     db = mongo.nosql_movie_db
     mongo.server_info()
     print(' * Success - Database Running on localhost, port 27017')
@@ -52,9 +55,12 @@ def login():
             else:
                 if "email" in session:
                     return redirect(url_for("logged_in"))
+                
+                # Wrong Password, Sending "User Back to Login"
                 message = 'Wrong Password.'
                 return render_template('login.html', message=message)
         else:
+            # Users Email Not Found in MongoDB
             message = 'Email Not Found.'
             return render_template('login.html', message=message)
     return render_template('login.html', message=message)
@@ -82,17 +88,39 @@ def logged_in():
             session['_id'] = movie_found['_id']
 
             return redirect(url_for('movie_query'))
+
+    # Greeting the Current User
     currentUser = session["name"]
     return render_template('logged_in.html', name=currentUser)
 
 # Returning Movie Results
 @app.route('/movie_query_results', methods=["POST", "GET"])
 def movie_query():
+    # Query to Find Comments Associated with the Movie the User Searched
     movieComments = db.comments.find_one({"movie_id": session["_id"]})
+
+    # Initializing These So There is No Error if No Comments
     session['text'] = "There are No Comments Yet!"
+    session['commenter'] = None
+
+    # If Movie Found Return Text with Commenter
     if movieComments:
         session['text'] = movieComments['text']
-        print('YO WE GOT THE TEXT')
+        session['commenter'] = movieComments['name']
+    
+    # User Comments if POST Request Received
+    if request.method == "POST":
+        comment = {
+            "date":datetime.datetime.utcnow(),
+            "email":session["email"],
+            "movie_id":session["_id"],
+            "name":session["name"],
+            "text":request.form["usercomment"]
+        }
+        dbResponse = db.comments.insert_one(comment)
+        print(dbResponse.inserted_id)
+
+    # Rendering Page with Movie & Comment Information
     return render_template('movie_search.html', 
     title = session['title'],
     awards = session['awards'],
@@ -103,7 +131,8 @@ def movie_query():
     imdb = session['imdb'], 
     rated = session['rated'],
     year = session['year'],
-    text = session['text']
+    text = session['text'],
+    commenter = session['commenter']
     ) 
 
 # Log Out
@@ -124,7 +153,7 @@ def create_user():
     try:
         user = {
             "email":request.form["email"],
-            "name" :request.form["name"],
+            "name":request.form["name"],
             "password":request.form["password"]
         }
         dbResponse = db.users.insert_one(user)

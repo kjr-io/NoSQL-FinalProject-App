@@ -2,7 +2,7 @@
 {% block title %} Movie Reviews. {% endblock %}
 
 {% block content %}
-<p>Movie Found: {{ title }}</p>
+<h3>Movie Found: {{ title }}</h3>
 <p>Awards: {{ awards }}</p>
 <p>Cast: {{ cast }}</p>
 <p>Countries: {{ countries }}</p>
@@ -12,6 +12,16 @@
 <p>Rated: {{ rated }}</p>
 <p>Year: {{ year }}</p>
 
-<p>HERE ARE THE COMMENTS.</p>
+<h3>Comments</h3>
 {{ text }}
+<p>by {{commenter}}</p>
+
+<h3>Leave a Comment!</h3>
+<form action="" method="post">
+    <div class="form-group">
+        <label for="InputMovie">What Did You Think About the Movie?</label>
+        <input name="usercomment" class="form-control" id="usercoment"  placeholder="Your Thoughts Here ...">
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
 {% endblock %}
