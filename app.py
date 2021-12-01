@@ -1,10 +1,7 @@
 from flask import Flask, render_template, request, url_for, redirect, session
 from flask.globals import session
 from flask.helpers import url_for
-#from flask.wrappers import Response
-#from flask_pymongo import PyMongo
 import pymongo
-import bcrypt
 from bson.objectid import ObjectId
 
 app = Flask(__name__)
@@ -24,75 +21,33 @@ try:
 except:
     print('ERROR - Could Not Connect to the DB.')
 
-
-# Constructing the Routes
-# ---------------------------------------------------------------- #
-# Home Page Route "localhost/"
-'''
-@app.route("/")
-def homepage():
-    return render_template('login.html')
-'''
-
 # CRUD Routes
 # ---------------------------------------------------------------- #
-
-# Create an Account
-'''
-@app.route("/", methods=['POST', 'GET'])
-def index():
-    message = ''
-    if "email" in session:
-        return redirect(url_for("logged_in"))
-    if request.method == "POST":
-        user = request.form.get("fullname")
-        email = request.form.get("email")
-        
-        password1 = request.form.get("password1")
-        password2 = request.form.get("password2")
-        
-        user_found = db.users.find_one({"name": user})
-        email_found = db.users.find_one({"email": email})
-        if user_found:
-            message = 'There Already is a User by that Name.'
-            return render_template('index.html', message=message)
-        if email_found:
-            message = 'This Email Already Exists in Database.'
-            return render_template('index.html', message=message)
-        if password1 != password2:
-            message = 'Passwords Should Match.'
-            return render_template('index.html', message=message)
-        else:
-            hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
-            user_input = {'name': user, 'email': email, 'password': hashed}
-            db.users.insert_one(user_input)
-            
-            user_data = db.users.find_one({"email": email})
-            new_email = user_data['email']
-   
-            return render_template('logged_in.html', email=new_email)
-    return render_template('index.html')
-'''
 
 # Log in
 @app.route("/", methods=["POST", "GET"])
 def login():
     message = 'Please Login to Your Account.'
+    # If User is Already Signed in, Redirect to Logged In
     if "email" in session:
         return redirect(url_for("logged_in"))
 
+    # If User Has Yet to Sign In
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
 
+        # Query Mongo for if the Email Exists
         email_found = db.users.find_one({"email": email})
         if email_found:
             email_val = email_found['email']
             passwordcheck = email_found['password']
+            currentusername = email_found['name']
             
-            #if bcrypt.checkpw(password.encode('utf-8'), passwordcheck):
+            # Checking to See if User Input Matches the Password Associated with the Email
             if password == passwordcheck:
                 session["email"] = email_val
+                session["name"] = currentusername
                 return redirect(url_for('logged_in'))
             else:
                 if "email" in session:
@@ -105,14 +60,51 @@ def login():
     return render_template('login.html', message=message)
 
 # Logged In
-@app.route('/logged_in')
+@app.route('/logged_in', methods=["POST", "GET"])
 def logged_in():
-    if "email" in session:
-        print(session)
-        email = session["email"]
-        return render_template('logged_in.html', email=email)
-    else:
-        return redirect(url_for("login"))
+    if request.method == "POST":
+        movie = request.form.get("movie")
+        movie_found = db.movies.find_one({"title": movie})
+        if movie_found:
+            
+            # Information to Give to User
+            session['title'] = movie_found['title']
+            session['awards'] = movie_found['awards']
+            session['cast'] = movie_found['cast']
+            session['countries'] = movie_found['countries']
+            session['directors'] = movie_found['directors']
+            session['genres'] = movie_found['genres']
+            session['imdb'] = movie_found['imdb']
+            session['rated'] = movie_found['rated']
+            session['year'] = movie_found['year']
+
+            # To Return Comments
+            session['_id'] = movie_found['_id']
+
+            return redirect(url_for('movie_query'))
+    currentUser = session["name"]
+    return render_template('logged_in.html', name=currentUser)
+
+# Returning Movie Results
+@app.route('/movie_query_results', methods=["POST", "GET"])
+def movie_query():
+    movieComments = db.comments.find_one({"movie_id": session["_id"]})
+    session['text'] = "There are No Comments Yet!"
+    if movieComments:
+        session['text'] = movieComments['text']
+        print('YO WE GOT THE TEXT')
+    return render_template('movie_search.html', 
+    title = session['title'],
+    awards = session['awards'],
+    cast = session['cast'],
+    countries = session['countries'],
+    directors = session['directors'],
+    genres = session['genres'],
+    imdb = session['imdb'], 
+    rated = session['rated'],
+    year = session['year'],
+    text = session['text']
+    ) 
 
 # Log Out
 @app.route("/logout", methods=["POST", "GET"])
@@ -122,9 +114,6 @@ def logout():
         return render_template("signout.html")
     else:
         return render_template('login.html')
-
-
-
 
 # CRUD Operation Examples
 # ---------------------------------------------------------------- #

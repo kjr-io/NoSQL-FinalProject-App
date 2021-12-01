@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %} Movie Reviews. {% endblock %}
+
+{% block content %}
+<p>Movie Found: {{ title }}</p>
+<p>Awards: {{ awards }}</p>
+<p>Cast: {{ cast }}</p>
+<p>Countries: {{ countries }}</p>
+<p>Directors: {{ directors }}</p>
+<p>Genres: {{ genres }}</p>
+<p>IMDB Ratings: {{ imdb }}</p>
+<p>Rated: {{ rated }}</p>
+<p>Year: {{ year }}</p>
+
+<p>HERE ARE THE COMMENTS.</p>
+{{ text }}
+{% endblock %}
