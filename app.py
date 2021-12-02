@@ -88,6 +88,7 @@ def logged_in():
             # To Return Comments
             session['_id'] = movie_found['_id']
             try:
+                # Gathering Number of Comments to Iterate On if the User Comments
                 session['num_comments'] = movie_found['num_mflix_comments']
             except:
                 # If There are No Comments, Add the Column and Set to Zero
@@ -103,6 +104,10 @@ def logged_in():
 @app.route('/movie_query_results', methods=["POST", "GET", "PATCH"])
 def movie_query():
     # Query to Find Comments Associated with the Movie the User Searched
+    # Trying to Find Multiple Comments Here
+    for doc in db.comments.find({"movie_id": session["_id"]}):
+        print(doc['text'])
+
     movieComments = db.comments.find_one({"movie_id": session["_id"]})
 
     # Initializing These So There is No Error if No Comments
@@ -138,7 +143,6 @@ def movie_query():
         except:
             print('Counter Failed.')
         
-
     # Rendering Page with Movie & Comment Information
     return render_template('movie_search.html', 
     title = session['title'],
