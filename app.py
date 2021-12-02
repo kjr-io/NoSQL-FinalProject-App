@@ -4,6 +4,7 @@ from flask.globals import session
 from flask.helpers import url_for
 import pymongo
 from bson.objectid import ObjectId
+from pymongo.message import update
 
 app = Flask(__name__)
 app.secret_key = 'testing'
@@ -86,6 +87,11 @@ def logged_in():
 
             # To Return Comments
             session['_id'] = movie_found['_id']
+            try:
+                session['num_comments'] = movie_found['num_mflix_comments']
+            except:
+                # If There are No Comments, Add the Column and Set to Zero
+                db.movies.update_one({'_id': session['_id']}, {"$set": {"num_mflix_comments": "0"}})
 
             return redirect(url_for('movie_query'))
 
@@ -94,7 +100,7 @@ def logged_in():
     return render_template('logged_in.html', name=currentUser)
 
 # Returning Movie Results
-@app.route('/movie_query_results', methods=["POST", "GET"])
+@app.route('/movie_query_results', methods=["POST", "GET", "PATCH"])
 def movie_query():
     # Query to Find Comments Associated with the Movie the User Searched
     movieComments = db.comments.find_one({"movie_id": session["_id"]})
@@ -119,6 +125,19 @@ def movie_query():
         }
         dbResponse = db.comments.insert_one(comment)
         print(dbResponse.inserted_id)
+
+        # If the User Comments, We Have to Update Num Comments
+        try:
+            num_commentsInt = int(session['num_comments'])
+            num_commentsInt += 1
+            db.movies.update_one (
+                {"_id": session["_id"]},
+                {"$set": {"num_mflix_comments": str(num_commentsInt)}}
+            )
+            print('Counter Successfully Updated!')
+        except:
+            print('Counter Failed.')
+        
 
     # Rendering Page with Movie & Comment Information
     return render_template('movie_search.html', 
