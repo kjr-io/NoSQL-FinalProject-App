@@ -3,18 +3,29 @@
 
 {% block content %}
 <h3>Movie Found: {{ title }}</h3>
+<p>Plot: {{ plot }}</p>
+<!-- AWARDS NEEDS WORK -->
 <p>Awards: {{ awards }}</p>
+<!--<p>Awards: {{ awards }}</p>-->
 <p>Cast: {{ cast }}</p>
 <p>Countries: {{ countries }}</p>
 <p>Directors: {{ directors }}</p>
 <p>Genres: {{ genres }}</p>
-<p>IMDB Ratings: {{ imdb }}</p>
+<p>IMDB Ratings: {{ imdb_rating }}/10 with {{ imdb_votes }} votes</p>
 <p>Rated: {{ rated }}</p>
 <p>Year: {{ year }}</p>
 
 <h3>Comments</h3>
-{{ text }}
-<p>by {{commenter}}</p>
+{% for comment in text %}
+    <li>
+        {{ comment }}
+        <!--<button type="submit" class="btn-danger btn-primary btn-sm">Delete Comment</button>
+        <p> </p>-->
+    </li>
+{% endfor %}
+
+<!--<p>by {{commenter}}</p>-->
+
 
 <h3>Leave a Comment!</h3>
 <form action="" method="post">

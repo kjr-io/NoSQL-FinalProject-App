@@ -19,7 +19,7 @@ try:
         serverSelectionTimeoutMS = 1000
     )
     # Selecting Our DB
-    db = mongo.nosql_movie_db
+    db = mongo.nosql_movies
     mongo.server_info()
     print(' * Success - Database Running on localhost, port 27017')
 except:
@@ -76,12 +76,14 @@ def logged_in():
             
             # Information to Give to User
             session['title'] = movie_found['title']
-            session['awards'] = movie_found['awards']
+            session['plot'] = movie_found['fullplot']
+            session['awards'] = movie_found['awards.wins']
             session['cast'] = movie_found['cast']
             session['countries'] = movie_found['countries']
             session['directors'] = movie_found['directors']
             session['genres'] = movie_found['genres']
-            session['imdb'] = movie_found['imdb']
+            session['imdb.rating'] = movie_found['imdb.rating']
+            session['imdb.votes'] = movie_found['imdb.votes']
             session['rated'] = movie_found['rated']
             session['year'] = movie_found['year']
 
@@ -101,24 +103,14 @@ def logged_in():
     return render_template('logged_in.html', name=currentUser)
 
 # Returning Movie Results
-@app.route('/movie_query_results', methods=["POST", "GET", "PATCH"])
+@app.route('/movie_query_results', methods=["POST", "GET"])
 def movie_query():
     # Query to Find Comments Associated with the Movie the User Searched
     # Trying to Find Multiple Comments Here
+    commentsList = []
     for doc in db.comments.find({"movie_id": session["_id"]}):
-        print(doc['text'])
+        commentsList.append(doc['text'] + ' by ' + doc['name'])
 
-    movieComments = db.comments.find_one({"movie_id": session["_id"]})
-
-    # Initializing These So There is No Error if No Comments
-    session['text'] = "There are No Comments Yet!"
-    session['commenter'] = None
-
-    # If Movie Found Return Text with Commenter
-    if movieComments:
-        session['text'] = movieComments['text']
-        session['commenter'] = movieComments['name']
-    
     # User Comments if POST Request Received
     if request.method == "POST":
         comment = {
@@ -139,24 +131,27 @@ def movie_query():
                 {"_id": session["_id"]},
                 {"$set": {"num_mflix_comments": str(num_commentsInt)}}
             )
-            print('Counter Successfully Updated!')
+            print(' * Counter Successfully Updated!')
         except:
-            print('Counter Failed.')
+            print(' * Counter Failed.')
+        # If the User Comments, Redirect Them Back to the Page to Show the New Comment
+        return redirect(url_for('movie_query'))
         
     # Rendering Page with Movie & Comment Information
     return render_template('movie_search.html', 
     title = session['title'],
+    plot = session['plot'],
     awards = session['awards'],
     cast = session['cast'],
     countries = session['countries'],
     directors = session['directors'],
     genres = session['genres'],
-    imdb = session['imdb'], 
+    imdb_rating = session['imdb.rating'],
+    imdb_votes = session['imdb.votes'], 
     rated = session['rated'],
     year = session['year'],
-    text = session['text'],
-    commenter = session['commenter']
-    ) 
+    text = commentsList
+    )
 
 # Log Out
 @app.route("/logout", methods=["POST", "GET"])
