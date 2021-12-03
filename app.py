@@ -152,6 +152,9 @@ def movie_query():
             print(' * Counter Failed.')
         # If the User Comments, Redirect Them Back to the Page to Show the New Comment
         return redirect(url_for('movie_query'))
+
+    if request.method == "PATCH":
+        print('Cool')
         
     # Rendering Page with Movie & Comment Information
     return render_template('movie_search.html', 
