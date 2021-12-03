@@ -78,10 +78,25 @@ def logged_in():
             session['title'] = movie_found['title']
             session['plot'] = movie_found['fullplot']
             session['awards'] = movie_found['awards.wins']
-            session['cast'] = movie_found['cast']
-            session['countries'] = movie_found['countries']
-            session['directors'] = movie_found['directors']
-            session['genres'] = movie_found['genres']
+
+            cast = movie_found['cast']
+            castStripped = cast.strip("[]")
+            session['cast'] = castStripped.replace('"', '')
+
+            # This Appears Like a List but is Actually Just One String
+            # Therefore to Output Correctly, the Data Must be Stripped & Replaced
+            countries = movie_found['countries']
+            countriesStripped = countries.strip("[]")
+            session['countries'] = countriesStripped.replace('"', '')
+
+            directors = movie_found['directors']
+            directorsStripped = directors.strip("[]")
+            session['directors'] = directorsStripped.replace('"', '')
+
+            genres = movie_found['genres']
+            genresStripped = genres.strip("[]")
+            session['genres'] = genresStripped.replace('"', '')
+
             session['imdb.rating'] = movie_found['imdb.rating']
             session['imdb.votes'] = movie_found['imdb.votes']
             session['rated'] = movie_found['rated']
@@ -89,6 +104,7 @@ def logged_in():
 
             # To Return Comments
             session['_id'] = movie_found['_id']
+
             try:
                 # Gathering Number of Comments to Iterate On if the User Comments
                 session['num_comments'] = movie_found['num_mflix_comments']
@@ -103,7 +119,7 @@ def logged_in():
     return render_template('logged_in.html', name=currentUser)
 
 # Returning Movie Results
-@app.route('/movie_query_results', methods=["POST", "GET"])
+@app.route('/movie_query_results', methods=["POST", "GET", "PATCH"])
 def movie_query():
     # Query to Find Comments Associated with the Movie the User Searched
     # Trying to Find Multiple Comments Here

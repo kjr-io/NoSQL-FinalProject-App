@@ -15,6 +15,26 @@
 <p>Rated: {{ rated }}</p>
 <p>Year: {{ year }}</p>
 
+<form action="" method="patch">
+    <h3>Leave a Rating!</h3>
+    <div class="form-group">
+    <label for="exampleFormControlSelect1">Select a Number Between 1 and 10. The Higher the Number, the More You Enjoyed the Movie!</label>
+    <select class="form-control" id="exampleFormControlSelect1">
+      <option>1</option>
+      <option>2</option>
+      <option>3</option>
+      <option>4</option>
+      <option>5</option>
+      <option>6</option>
+      <option>7</option>
+      <option>8</option>
+      <option>9</option>
+      <option>10</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary btn-sm">Submit</button>
+</form>
+
 <h3>Comments</h3>
 {% for comment in text %}
     <li>
@@ -25,7 +45,6 @@
 {% endfor %}
 
 <!--<p>by {{commenter}}</p>-->
-
 
 <h3>Leave a Comment!</h3>
 <form action="" method="post">
