@@ -76,6 +76,8 @@ def logged_in():
             
             # Information to Give to User
             session['title'] = movie_found['title']
+            session['poster'] = movie_found['poster']
+            print(session['poster'])
             session['plot'] = movie_found['fullplot']
             session['awards'] = movie_found['awards.wins']
 
@@ -138,7 +140,7 @@ def movie_query():
         }
         dbResponse = db.comments.insert_one(comment)
         print(dbResponse.inserted_id)
-
+    
         # If the User Comments, We Have to Update Num Comments
         try:
             num_commentsInt = int(session['num_comments'])
@@ -153,12 +155,10 @@ def movie_query():
         # If the User Comments, Redirect Them Back to the Page to Show the New Comment
         return redirect(url_for('movie_query'))
 
-    if request.method == "PATCH":
-        print('Cool')
-        
     # Rendering Page with Movie & Comment Information
     return render_template('movie_search.html', 
     title = session['title'],
+    poster = session['poster'],
     plot = session['plot'],
     awards = session['awards'],
     cast = session['cast'],
