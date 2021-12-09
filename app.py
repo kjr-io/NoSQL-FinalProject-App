@@ -79,7 +79,7 @@ def logged_in():
             session['title'] = movie_found['title']
             session['poster'] = movie_found['poster']
             session['plot'] = movie_found['fullplot']
-            session['awards'] = movie_found['awards.wins']
+            session['awards'] = movie_found['awards_wins']
 
             cast = movie_found['cast']
             castStripped = cast.strip("[]")
@@ -99,8 +99,8 @@ def logged_in():
             genresStripped = genres.strip("[]")
             session['genres'] = genresStripped.replace('"', '')
 
-            session['imdb.rating'] = movie_found['imdb.rating']
-            session['imdb.votes'] = movie_found['imdb.votes']
+            session['imdb_rating'] = movie_found['imdb_rating']
+            session['imdb_votes'] = movie_found['imdb_votes']
             session['rated'] = movie_found['rated']
             session['year'] = movie_found['year']
 
@@ -125,13 +125,16 @@ def logged_in():
     return render_template('logged_in.html', name=currentUser)
 
 # Returning Movie Results
-@app.route('/movie_query_results', methods=["POST", "GET", "PATCH"])
+commentIdList = []
+@app.route('/movie_query_results', methods=["POST", "GET"])
 def movie_query():
     # Query to Find Comments Associated with the Movie the User Searched
     # Trying to Find Multiple Comments Here
     commentsList = []
     for doc in db.comments.find({"movie_id": session["_id"]}):
         commentsList.append(doc['text'] + ' by ' + doc['name'])
+        commentIdList.append(doc['_id'])
+    print(commentIdList)
 
     # User Comments if POST Request Received
     if request.method == "POST":
@@ -161,22 +164,23 @@ def movie_query():
             return redirect(url_for('movie_query'))
         if 'userrating' in request.form:
             try:
-                #updatedRatings = session['imdb.rating']
-                updatedVotes = session['imdb.votes']
-                print(updatedVotes)
-                #userRatingForm = int(request.form["userrating"])
+                currentRating = session['imdb_rating']
+                updatedVotes = session['imdb_votes']
 
-                #updatedRatings = (((updatedRatings * updatedVotes) + userRatingForm)/(updatedVotes + 1))
+                userRatingForm = int(request.form["userrating"])
+                updatedRatings = round((((currentRating * updatedVotes) + userRatingForm)/(updatedVotes + 1)), 2)
+
                 updatedVotes += 1
-                print(updatedVotes)
-                db.movies.update_one (
+                
+                db.movies.update_many (
                     {"_id": session["_id"]},
-                    {"$set": {"imdb.votes": updatedVotes}}
+                    {"$set": {"imdb_votes": updatedVotes, "imdb_rating": updatedRatings}}
                 )
                 print(' * Counter Successfully Updated!')
+                print(' * Rating Successfully Updated!')
                 
             except:
-                print(' * Counter Failed.')
+                print(' * Counter & Rating Failed.')
             return redirect(url_for('movie_query'))
 
     # Rendering Page with Movie & Comment Information
@@ -189,12 +193,28 @@ def movie_query():
     countries = session['countries'],
     directors = session['directors'],
     genres = session['genres'],
-    imdb_rating = session['imdb.rating'],
-    imdb_votes = session['imdb.votes'], 
+    imdb_rating = session['imdb_rating'],
+    imdb_votes = session['imdb_votes'], 
     rated = session['rated'],
     year = session['year'],
     text = commentsList
     )
+
+@app.route('/delete/<index>', methods=["GET", "POST"])
+def delete(index):
+    try:
+        var = int(index)
+        objId = str(commentIdList[var])
+        dbResponse = db.comments.delete_one({"_id": ObjectId(objId)})
+        if dbResponse.deleted_count == 1:
+            print(' * Comment Deleted.')
+        else: 
+            print('* Comment not Found.')
+        commentIdList.clear()
+        return redirect(url_for('movie_query'))
+    except:
+        print('Cannot Delete Comment.')
+        return redirect(url_for('movie_query'))
 
 # Log Out
 @app.route("/logout", methods=["POST", "GET"])

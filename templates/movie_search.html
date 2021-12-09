@@ -42,8 +42,9 @@
 {% for comment in text %}
     <li>
         {{ comment }}
-        <!--<button type="submit" class="btn-danger btn-primary btn-sm">Delete Comment</button>
-        <p> </p>-->
+        <a href="{{ url_for('delete', index=loop.index0)}}" class="btn btn-outline-secondary btn-sm">Delete</a>
+        <!--<button type="submit" class="btn-danger btn-primary btn-sm">Delete Comment</button>-->
+        <p> </p>
     </li>
 {% endfor %}
 
