@@ -4,7 +4,7 @@
 {% block content %}
 <h3>Movie Found: {{ title }}</h3>
 
-<img src={{ poster }} alt="Girl in a jacket" width="250" height="250">
+<img src={{ poster }} alt="Movie Poster" width="250" height="250">
 
 <p>Plot: {{ plot }}</p>
 <!-- AWARDS NEEDS WORK -->
@@ -21,8 +21,8 @@
 <form action="" method="post">
     <h3>Leave a Rating!</h3>
     <div class="form-group">
-    <label for="userRating">Select a Number Between 1 and 10. The Higher the Number, the More You Enjoyed the Movie!</label>
-    <select class="form-control" id="userRating">
+    <label for="userrating">Select a Number Between 1 and 10. The Higher the Number, the More You Enjoyed the Movie!</label>
+    <select name="userrating"class="form-control" id="userrating">
       <option>1</option>
       <option>2</option>
       <option>3</option>

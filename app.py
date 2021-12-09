@@ -5,6 +5,7 @@ from flask.helpers import url_for
 import pymongo
 from bson.objectid import ObjectId
 from pymongo.message import update
+import math
 
 app = Flask(__name__)
 app.secret_key = 'testing'
@@ -77,7 +78,6 @@ def logged_in():
             # Information to Give to User
             session['title'] = movie_found['title']
             session['poster'] = movie_found['poster']
-            print(session['poster'])
             session['plot'] = movie_found['fullplot']
             session['awards'] = movie_found['awards.wins']
 
@@ -110,6 +110,10 @@ def logged_in():
             try:
                 # Gathering Number of Comments to Iterate On if the User Comments
                 session['num_comments'] = movie_found['num_mflix_comments']
+
+                if int(session['num_comments']) < 0:
+                    db.movies.update_one({'_id': session['_id']}, {"$set": {"num_mflix_comments": "0"}})
+                
             except:
                 # If There are No Comments, Add the Column and Set to Zero
                 db.movies.update_one({'_id': session['_id']}, {"$set": {"num_mflix_comments": "0"}})
@@ -131,29 +135,49 @@ def movie_query():
 
     # User Comments if POST Request Received
     if request.method == "POST":
-        comment = {
-            "date":datetime.datetime.utcnow(),
-            "email":session["email"],
-            "movie_id":session["_id"],
-            "name":session["name"],
-            "text":request.form["usercomment"]
-        }
-        dbResponse = db.comments.insert_one(comment)
-        print(dbResponse.inserted_id)
-    
-        # If the User Comments, We Have to Update Num Comments
-        try:
-            num_commentsInt = int(session['num_comments'])
-            num_commentsInt += 1
-            db.movies.update_one (
-                {"_id": session["_id"]},
-                {"$set": {"num_mflix_comments": str(num_commentsInt)}}
-            )
-            print(' * Counter Successfully Updated!')
-        except:
-            print(' * Counter Failed.')
-        # If the User Comments, Redirect Them Back to the Page to Show the New Comment
-        return redirect(url_for('movie_query'))
+        if 'usercomment' in request.form:
+            comment = {
+                "date":datetime.datetime.utcnow(),
+                "email":session["email"],
+                "movie_id":session["_id"],
+                "name":session["name"],
+                "text":request.form["usercomment"]
+            }
+            dbResponse = db.comments.insert_one(comment)
+            print(dbResponse.inserted_id)
+
+            # If the User Comments, We Have to Update Num Comments
+            try:
+                num_commentsInt = int(session['num_comments'])
+                num_commentsInt += 1
+                db.movies.update_one (
+                    {"_id": session["_id"]},
+                    {"$set": {"num_mflix_comments": str(num_commentsInt)}}
+                )
+                print(' * Counter Successfully Updated!')
+            except:
+                print(' * Counter Failed.')
+            # If the User Comments, Redirect Them Back to the Page to Show the New Comment
+            return redirect(url_for('movie_query'))
+        if 'userrating' in request.form:
+            try:
+                #updatedRatings = session['imdb.rating']
+                updatedVotes = session['imdb.votes']
+                print(updatedVotes)
+                #userRatingForm = int(request.form["userrating"])
+
+                #updatedRatings = (((updatedRatings * updatedVotes) + userRatingForm)/(updatedVotes + 1))
+                updatedVotes += 1
+                print(updatedVotes)
+                db.movies.update_one (
+                    {"_id": session["_id"]},
+                    {"$set": {"imdb.votes": updatedVotes}}
+                )
+                print(' * Counter Successfully Updated!')
+                
+            except:
+                print(' * Counter Failed.')
+            return redirect(url_for('movie_query'))
 
     # Rendering Page with Movie & Comment Information
     return render_template('movie_search.html', 
