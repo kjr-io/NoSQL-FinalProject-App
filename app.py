@@ -200,6 +200,7 @@ def movie_query():
     text = commentsList
     )
 
+# Deleting Comment
 @app.route('/delete/<index>', methods=["GET", "POST"])
 def delete(index):
     try:
